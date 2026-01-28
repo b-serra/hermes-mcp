@@ -418,6 +418,7 @@ defmodule Hermes.Server.Frame do
                | {:output_schema, map | nil}
                | {:title, String.t() | nil}
                | {:annotations, map | nil}
+               | {:meta, map | nil}
   def register_tool(%__MODULE__{} = frame, name, opts) when is_binary(name) do
     input_schema = Schema.normalize(opts[:input_schema] || %{})
     raw_schema = Component.__clean_schema_for_peri__(input_schema)
@@ -437,6 +438,7 @@ defmodule Hermes.Server.Frame do
       input_schema: Schema.to_json_schema(input_schema),
       output_schema: if(output_schema, do: Schema.to_json_schema(output_schema)),
       annotations: opts[:annotations],
+      meta: opts[:meta],
       validate_input: validate_input,
       validate_output: validate_output
     })
