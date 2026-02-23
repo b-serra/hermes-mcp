@@ -250,7 +250,14 @@ defmodule Hermes.Server.Transport.StreamableHTTP do
 
     cond do
       Message.is_notification(message) ->
-        GenServer.cast(server, {:notification, message, session_id, context})
+        # Use synchronous call for initialized notification to prevent race condition
+        # where subsequent requests arrive before the server processes initialization
+        if message["method"] == "notifications/initialized" do
+          GenServer.call(server, {:notification, message, session_id, context}, timeout)
+        else
+          GenServer.cast(server, {:notification, message, session_id, context})
+        end
+
         {:reply, {:ok, nil}, state}
 
       Message.is_response(message) or Message.is_error(message) ->
@@ -279,7 +286,12 @@ defmodule Hermes.Server.Transport.StreamableHTTP do
     timeout = state.request_timeout
 
     if Message.is_notification(message) do
-      GenServer.cast(server, {:notification, message, session_id, context})
+      if message["method"] == "notifications/initialized" do
+        GenServer.call(server, {:notification, message, session_id, context}, timeout)
+      else
+        GenServer.cast(server, {:notification, message, session_id, context})
+      end
+
       {:reply, {:ok, nil}, state}
     else
       sse_handler? = Map.has_key?(state.sse_handlers, session_id)

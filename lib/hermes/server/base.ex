@@ -133,6 +133,21 @@ defmodule Hermes.Server.Base do
     end
   end
 
+  # Synchronous notification handling for notifications/initialized to prevent
+  # race condition where requests arrive before initialization is processed
+  def handle_call({:notification, decoded, session_id, context}, _from, state) when is_map(decoded) do
+    with {:ok, {%Session{} = session, state}} <-
+           maybe_attach_session(session_id, context, state) do
+      if Message.is_initialize_lifecycle(decoded) or Session.is_initialized(session) do
+        case handle_notification(decoded, session, state) do
+          {:noreply, new_state} -> {:reply, :ok, new_state}
+        end
+      else
+        {:reply, :ok, state}
+      end
+    end
+  end
+
   def handle_call(request, from, %{module: module} = state) do
     case module.handle_call(request, from, state.frame) do
       {:reply, reply, frame} ->
