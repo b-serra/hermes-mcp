@@ -370,7 +370,7 @@ if Code.ensure_loaded?(Plug) do
         |> get_req_header("accept")
         |> List.first("")
 
-      if String.contains?(accept_header, "application/json") and
+      if String.contains?(accept_header, "application/json") or
            String.contains?(accept_header, "text/event-stream") do
         :ok
       else
